@@ -82,6 +82,8 @@ async def read_user_items(
     # `needy` is a required query parameter
     # `q` is an optional query parameter
     # `short` is a query parameter with a default value
+    # `short`'s type would be converted to `bool` by FastAPI
+    # any value other than F(f)alse will be interpreted as `True`
     item = {"item_id": item_id, "owner_id": user_id, "needy": needy}
     if q:
         item.update({"q": q})
