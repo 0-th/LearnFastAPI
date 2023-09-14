@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Union
 
 from fastapi import FastAPI
 
@@ -62,3 +63,34 @@ async def get_model(model_name: ModelName):
 @app.get("/files/{file_path:path}")
 async def read_files(file_path: str):
     return {"file_path": file_path}
+
+# -----------------------------------------------------------------------------
+
+
+# QUERY PARAMETERS
+# path operation function parameters that aren't part of the path are
+# interpreted as query parameters
+@app.get("/users/{user_id}/items/{item_id}")
+async def read_user_items(
+        user_id: int,
+        item_id: str,
+        needy: str,
+        q: Union[str, None] = None,
+        short: bool = False
+):
+    # `user_id` and `item_id` are path parameters
+    # `needy` is a required query parameter
+    # `q` is an optional query parameter
+    # `short` is a query parameter with a default value
+    # `short`'s type would be converted to `bool` by FastAPI
+    # any value other than F(f)alse will be interpreted as `True`
+    item = {"item_id": item_id, "owner_id": user_id, "needy": needy}
+    if q:
+        item.update({"q": q})
+    if not short:
+        item.update(
+            {
+                "description":
+                "This is an amazing item that has a long description"
+            }
+        )
