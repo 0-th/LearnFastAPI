@@ -102,6 +102,11 @@ async def read_user_items(
 # Request body is data sent by the client (mobile/web) to the API
 # it is included in the request as JSON
 
+class Category(str, Enum):
+    fiction = "fiction"
+    non_fiction = "non-fiction"
+
+
 # Pydantic models are used to declare request body
 class Book(BaseModel):
     title: str
@@ -109,12 +114,11 @@ class Book(BaseModel):
     year: int
     price: float
     isbn: int
-    category: Union[str, None] = None
 
 
 @app.post("/books/{category}")
 async def create_book(
-        book: Book, quantity: int = 1, category: Union[str, None] = None
+        book: Book, quantity: int = 1, category: Union[Category, None] = None
 ):
     # `book` is a request body parameter
     # `quantity` is a query parameter
