@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Annotated, List, Union
+from typing import Annotated, Dict, List, Union
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Path, Query
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -178,4 +178,52 @@ async def read_metadata_items(
     results = {}
     if q:
         results.update({"q": q})
+    return results
+
+
+# ----------------------------------------------------------------------------
+# Path parameters and numerical validation
+# In ordering (path/query) parameters, params with a default value cannot come
+# before params without. If that's the case, python would spit an error.
+# if you need to order it that way let the first argument to the path-operation
+# function be an `*`, then python would parse all params as kwargs
+
+@app.get(path='/items/{item_id}')
+def read_path_items(
+        item_id: Annotated[int, Path(title="ID of the retrieved item")],
+        desc: Annotated[bool, Query(description="Add a description")] = False,
+        q: str = ...,  # could also use Pydantic's `Required` class
+        # required query param without a default value coming after a param
+        # with a default value
+):
+    results: Dict[str, Union[int, str, bool]] = {"item_id": item_id}
+    # BUG: `item_id` isn't included in the response
+    results.update({"q": q})  # BUG: `q` isn't included in the response
+    if desc:
+        results.update(
+            {
+                "description":
+                "This is an amazing item that has a long description"
+            }
+        )
+    return results
+
+
+# numeric validations
+# `gt` and `lt` are greater than and less than respectively
+# `ge` and `le` are greater than or equal to and less than or equal to
+@app.get("/numeric-items/{item_id}")
+async def read_numeric_items(
+        item_id: Annotated[
+            int,
+            Path(
+                title="ID of the item to get",
+                ge=1,
+                le=1000
+            )
+        ],
+        q: str,
+        size: Annotated[float, Query(gt=0, lt=10.5)]  # float datatype
+):
+    results = {"item_id": item_id, "q": q, "size": size}
     return results
