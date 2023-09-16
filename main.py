@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Union
 
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -94,3 +95,37 @@ async def read_user_items(
                 "This is an amazing item that has a long description"
             }
         )
+
+
+# -----------------------------------------------------------------------------
+# REQUEST BODY
+# Request body is data sent by the client (mobile/web) to the API
+# it is included in the request as JSON
+
+class Category(str, Enum):
+    fiction = "fiction"
+    non_fiction = "non-fiction"
+
+
+# Pydantic models are used to declare request body
+class Book(BaseModel):
+    title: str
+    author: str
+    year: int
+    price: float
+    isbn: int
+
+
+@app.post("/books/{category}")
+async def create_book(
+        book: Book, quantity: int = 1, category: Union[Category, None] = None
+):
+    # `book` is a request body parameter
+    # `quantity` is a query parameter
+    # `category` is a path parameter
+    if category:
+        book.category = category
+
+    result = book.model_dump()  # returns a dict of the model's values
+    result.update({"quantity": quantity})
+    return result
