@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Union
+from typing import Annotated, List, Union
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -129,3 +129,53 @@ async def create_book(
     result = book.model_dump()  # returns a dict of the model's values
     result.update({"quantity": quantity})
     return result
+
+
+# -----------------------------------------------------------------------------
+# Query parameters and string validations
+# Pydantic can be used to validate the values for the query parameters
+@app.get("/query-item/")
+async def read_query_items(q: Annotated[Union[str, None], Query()] = ...):
+    # `q` is a required query parameters. It also accepts None
+    # Pydantic `Required` class can replace the ellipsis.
+    query_items = {q: q}
+    return query_items
+
+
+# a list of values can also be accepted for a query parameter
+@app.get("/query-list-items")
+async def read_list_items(q: Annotated[List[str], Query()] = ["foo", "bar"]):
+    # query param `q` accepts a list of strings and has a default value
+    # http://localhost:8000/items/?q=foo&q=bar
+    query_list_items = {"q": q}
+    return query_list_items
+
+
+# Fastapi also recognizes other non-validation metadata for query parameters
+@app.get("/query-metadata-items")
+async def read_metadata_items(
+        q: Annotated[
+            Union[str, None],
+            Query(
+                alias="item-query",
+                title="Query String",
+                description=(
+                    "Query string for the items to search in the database that"
+                    "have a good match"
+                ),
+                min_length=3,
+                max_length=50,
+                pattern="^fixedquery$",
+                deprecated=True
+            )
+        ] = None
+):
+    # query parameter `q` contains the following metadata:
+    # - alias: enables the use of `item-query` instead of `q` in the query str
+    # - title and description: used in the OpenAPI schema or docs
+    # - min_length, max_length and pattern: used for string validation
+    # - deprecated: used to mark a query parameter as deprecated in the docs
+    results = {}
+    if q:
+        results.update({"q": q})
+    return results
