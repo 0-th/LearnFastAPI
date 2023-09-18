@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated, Dict, List, Union
 
-from fastapi import FastAPI, Path, Query
+from fastapi import Body, FastAPI, Path, Query
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -227,3 +227,77 @@ async def read_numeric_items(
 ):
     results = {"item_id": item_id, "q": q, "size": size}
     return results
+
+
+# ----------------------------------------------------------------------------
+# MULTIPLE REQUEST BODY PARAMETERS
+# Query parameters of complex types(e.g list) should be annotated with `Query`,
+# similarly, request body parameters of single values should be annotated with
+# `Body`, else FastAPI would interpret them as query parameters or in the case
+# of query parameters, FastAPI would interpret them as request body parameters
+
+
+class LibUser(BaseModel):
+    student = "student"
+    teacher = "teacher"
+
+
+class LibItem(BaseModel):
+    title: str
+    category: Union[Category, None] = None
+
+
+@app.put("/lib-items/{item_id}")
+async def update_lib_item(
+        item_id: int,
+        item: LibItem,
+        user: LibUser,
+        # single value request body parameter
+        importance: Annotated[
+            int,
+            Body(gt=0, lt=1000)
+            ],
+        q: Union[str, None] = None
+):
+    results = {
+        "item_id": item_id,
+        "item": item,
+        "user": user,
+        "importance": importance
+    }
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# Embed a single body parameter in the request body.
+# the request body is a single json object,if there's a single parameter
+# in the request body, it would be interpreted as the json object and only
+# the value of the parameter would be returned.
+# To embed the parameter with the key itself, use `Body(..., embed=True)`
+@app.get("/embed-body-item/{item_id}")
+async def read_embed_body_item(
+        item_id: int,
+        item: Annotated[LibItem, Body(embed=True)]
+):
+    results = {"item_id": item_id, "item": item}
+    return results
+# Request body would look like:
+""" {
+    "item": {
+        "name": "Foo",
+        "description": "The pretender",
+        "price": 42.0,
+        "tax": 3.2
+    }
+}
+"""
+# instead of the default:
+"""
+{
+    "name": "Foo",
+    "description": "The pretender",
+    "price": 42.0,
+    "tax": 3.2,
+}
+"""
