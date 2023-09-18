@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Annotated, Dict, List, Union
 
 from fastapi import Body, FastAPI, Path, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI()
 
@@ -237,7 +237,7 @@ async def read_numeric_items(
 # of query parameters, FastAPI would interpret them as request body parameters
 
 
-class LibUser(BaseModel):
+class LibUser(str, Enum):
     student = "student"
     teacher = "teacher"
 
@@ -301,3 +301,36 @@ async def read_embed_body_item(
     "tax": 3.2,
 }
 """
+
+# ----------------------------------------------------------------------------
+# REQUEST BODY FIELDS
+# Metadata can be added to the fields of Pydantic models that describe the
+# request body.
+# `Field` class is used to add metadata to the fields of a Pydantic model.
+# It accepts arguments similar to the `Query` and `Path` classes.
+
+
+class FieldItem(BaseModel):
+    name: str
+    description: Annotated[
+        Union[str, None], Field(
+            default=None,
+            title="The description of the item",
+            max_length=300
+        )
+    ]
+    price: Annotated[float, Field(
+        default=...,
+        gt=0,
+        description="The price must be greater than zero"
+    )]
+    tax: Union[float, None] = None
+
+
+@app.put("/field-items/{item_id}")
+async def update_field_item(
+        item_id: int,
+        item: Annotated[FieldItem, Body(embed=True)]
+):
+    results = {"item_id": item_id, "item": item}
+    return results
