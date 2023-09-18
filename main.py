@@ -237,7 +237,7 @@ async def read_numeric_items(
 # of query parameters, FastAPI would interpret them as request body parameters
 
 
-class LibUser(BaseModel):
+class LibUser(str, Enum):
     student = "student"
     teacher = "teacher"
 
