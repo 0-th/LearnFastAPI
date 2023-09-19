@@ -137,7 +137,12 @@ async def create_book(
 @app.get("/query-item/")
 async def read_query_items(q: Annotated[Union[str, None], Query()] = ...):
     # `q` is a required query parameters. It also accepts None
-    # Pydantic `Required` class can replace the ellipsis.
+    # Pydantic `Required` class can replace the ellipsis only within models.
+    # FastAPI doesn't recognize it outside of models
+
+    # Also, since assigning ellipsis directly doesn't provide good validation
+    # error messages, it's better to use it within Query, Path or Body classes
+    # `Query(...)`
     query_items = {q: q}
     return query_items
 
@@ -192,9 +197,13 @@ async def read_metadata_items(
 def read_path_items(
         item_id: Annotated[int, Path(title="ID of the retrieved item")],
         desc: Annotated[bool, Query(description="Add a description")] = False,
-        q: str = ...,  # could also use Pydantic's `Required` class
-        # required query param without a default value coming after a param
+        # required query param `q` without a default value coming after a param
         # with a default value
+        q: str = ...,  # could also use Pydantic's `Required` class (wrong)
+        # only use Pydantic's `Required` class within models.
+        # use `Query(...)` instead here, since ellipsis doesn't provide good
+        # validation error messages.
+
 ):
     results: Dict[str, Union[int, str, bool]] = {"item_id": item_id}
     # BUG: `item_id` isn't included in the response
