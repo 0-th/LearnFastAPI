@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Annotated, Dict, List, Union
 
 from fastapi import Body, FastAPI, Path, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 app = FastAPI()
 
@@ -343,3 +343,64 @@ async def update_field_item(
 ):
     results = {"item_id": item_id, "item": item}
     return results
+
+
+# ----------------------------------------------------------------------------
+# NESTED MODELS
+# Pydantic's models can have fields with types that are themselves Pydantic
+# models
+
+
+class NestedImage(BaseModel):
+    url: HttpUrl  # Pydantic's special type for URLs
+    name: str
+
+
+class NestedItem(BaseModel):
+    name: str
+    description: Union[str, None] = None
+    price: float
+    tax: Union[float, None] = None
+    tags: List[str] = []
+    image: Union[NestedImage, None] = None
+
+
+class NestedUser(BaseModel):
+    username: str
+    full_name: Union[str, None] = None
+    items: List[NestedItem]
+
+
+# NOTE: Request bodies should only be sent with POST, PUT or PATCH requests
+# it shouldn't be added as a parameter to a GET request
+@app.post("/nested-user/{user_id}")
+async def create_nested_user(
+        user_id: int,
+        user: Annotated[NestedUser, Body(default=..., embed=True)],
+        q: Union[str, None] = None
+):
+    results = {"user_id": user_id, "user": user}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# The request body type could also be a dict with a data type specified for
+# the key and values.
+# This is useful when you don't know what fields the request body would have
+# beforehand.
+
+
+class HeightLabel(str, Enum):
+    tall = "tall"
+    medium = "medium"
+    short = "short"
+
+
+@app.post("/index-heights")
+async def create_index_heights(
+        weights: Annotated[
+        Dict[int, HeightLabel], Body(default=..., embed=True)
+        ]
+):
+    return weights
