@@ -404,3 +404,109 @@ async def create_index_heights(
         ]
 ):
     return weights
+
+
+# ----------------------------------------------------------------------------
+# DECLARE REQUEST EXAMPLE DATA
+# Example data for request model can be declared for documentation purposes
+
+
+class ExampleItem(BaseModel):
+    name: str
+    description: Union[str, None] = None
+    price: float
+    tax: Union[float, None] = None
+
+    # declare example data
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "name": "Foo",
+                "description": "A very nice Item",
+                "price": 35.4,
+                "tax": 3.2
+            }
+        }
+    }
+
+
+@app.post("/example-items/{item_id}")
+async def create_example_item(
+        item_id: int,
+        item: Annotated[ExampleItem, Body(default=..., embed=True)]
+):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+# Request body fields can also have example data declared
+
+class ExampleFieldItem(BaseModel):
+    name: str = Field(examples=["Foo"])
+    description: Union[str, None] = Field(
+        default=None, examples=["A very nice Item"]
+    )
+    price: float = Field(..., gt=0, examples=[35.4])
+    tax: Union[float, None] = Field(default=None, examples=[3.2])
+
+
+@app.put("/example-field-items/{item_id}")
+async def update_example_field_item(
+        item_id: int,
+        item: Annotated[ExampleFieldItem, Body(embed=True)]
+):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+# The above also works for Query(), Path(), Body(), etc.
+
+# Passing multiple examples to a request body parameter
+# `examples` can be passed as a list of dicts
+
+
+@app.post("/example-items-multiple/{item_id}")
+async def create_example_items_multiple(
+        item_id: int,
+        item: Annotated[
+            ExampleItem,
+            Body(
+                default=...,
+                embed=True,
+                # Only the first example would be included in the docs
+                examples=[
+                    {
+                        "summary": "A foo item",
+                        "description": "A very nice Item",
+                        "value": {
+                            "name": "Foo",
+                            "description": "A very nice Item",
+                            "price": 35.4,
+                            "tax": 3.2
+                        }
+                    },
+                    {
+                        "summary": "A bar item",
+                        "description": "A very nice Bar Item",
+                        "value": {
+                            "name": "Bar",
+                            "description": "A very nice Bar Item",
+                            "price": 62.4,
+                            "tax": 3.2
+                        }
+                    }
+                ]
+            )
+        ]
+):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+# INCLUDE MULTIPLE EXAMPLES IN THE DOCS
+# note: only the first example would included in the docs.
+# this is because the swagger-ui doesn't support multiple examples being
+# included in the json schema (as it was only recently supported in the
+# json schema spec).
+# However, the OpenAPI spec used to support multiple examples
+# before json schema which is still supported by swagger-ui and redoc.
+# To include multiple examples in the docs, replace `examples` with
+# `openapi_examples` which is provided by fastapi and supported by swagger-ui
