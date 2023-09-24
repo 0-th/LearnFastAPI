@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Annotated, Dict, List, Union
 from uuid import UUID
 
-from fastapi import Body, FastAPI, Path, Query
+from fastapi import Body, FastAPI, Path, Query, Cookie
 from pydantic import BaseModel, Field, HttpUrl
 
 app = FastAPI()
@@ -553,3 +553,18 @@ async def create_extra_item(
         "duration": duration
     }
     return result
+
+
+# --------------------------------------------------------------------------------
+# COOKIE PARAMETERS
+# Cookie parameters are declared in the path operation function just like query
+# and path parameters.
+# If the `Cookie` class isn't added to a parameter, it would considered a query
+# param
+
+
+@app.get("/cookie-items/")
+async def read_cookie_items(
+    maryland_cookie: Annotated[str, Cookie(default="default_maryland_cookie")]
+):
+    return {"maryland_cookie": maryland_cookie}
