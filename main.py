@@ -565,6 +565,6 @@ async def create_extra_item(
 
 @app.get("/cookie-items/")
 async def read_cookie_items(
-    maryland_cookie: Annotated[str, Cookie(default="default_maryland_cookie")]
+    maryland_cookie: Annotated[str, Cookie()] = "default maryland cookies"
 ):
     return {"maryland_cookie": maryland_cookie}
