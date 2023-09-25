@@ -1,5 +1,7 @@
+from datetime import datetime, time, timedelta
 from enum import Enum
 from typing import Annotated, Dict, List, Union
+from uuid import UUID
 
 from fastapi import Body, FastAPI, Path, Query
 from pydantic import BaseModel, Field, HttpUrl
@@ -510,3 +512,44 @@ async def create_example_items_multiple(
 # before json schema which is still supported by swagger-ui and redoc.
 # To include multiple examples in the docs, replace `examples` with
 # `openapi_examples` which is provided by fastapi and supported by swagger-ui
+
+
+# --------------------------------------------------------------------------------
+# EXTRA DATATYPES
+# We've only used basic datatypes supported by Pydantic so far.
+# FastAPI also allows non-basic datatypes that aren't supported by Pydantic
+# models to be used in path, query and request body parameters.
+
+
+@app.post("/extra-items/{item_id}")
+async def create_extra_item(
+        item_id: UUID,
+        start_datetime: Annotated[datetime, Body(
+            # declare multiple example data in the docs
+            # FIX: none of the examples were displayed in the docs
+            openapi_examples={
+                "example1": {
+                    "summary": "First example",
+                    "value": "2019-07-26T20:56:00.123456+00:00"
+                },
+                "example2": {
+                    "summary": "Second example",
+                    "value": "2019-07-26T20:56:00.123456",
+                }
+            }
+        )],
+        end_datetime: Annotated[datetime, Body()],
+        repeat_at: Annotated[time, Body()],
+        process_after: Annotated[timedelta, Body()],
+):
+    # values of these datatypes can be used in the usual ways
+    process_start = start_datetime + process_after
+    duration = end_datetime - process_start
+
+    result = {
+        "item_id": item_id,
+        "repeat_at": repeat_at,
+        "process_start": process_start,
+        "duration": duration
+    }
+    return result
